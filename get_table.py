@@ -30,11 +30,17 @@ def get_table(table):
             continue
 #    afDatabases = AFDatabases()
 #    afDatabase = afDatabases["PVStations"]
-#    tables = AFDatabase.AFTables
-#    return_table = AFTable.Table(table)
-#    return return_table
-    
+    tables = AFDatabase.AFTables
+    return_table = AFTable.Table(table)
+    return return_table
 
+
+    
+#if __name__ == "__main__":
+#    database = connect_server_pisystems()
+#    if database is not None:
+#        table = get_table("NIST_Insitu_IV")
+#        print(table)
 
 #def get_table12(table):
 #    
@@ -47,7 +53,5 @@ def get_table(table):
 #    return Table_return
 
 if __name__ == "__main__":
-    database = connect_server_pisystems()
-    if database is not None:
-        table = get_table("NIST_Insitu_IV")
-        print(table)
+    table = get_table("NIST_Insitu_IV")
+    print(table)
