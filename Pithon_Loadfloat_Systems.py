@@ -21,13 +21,9 @@ from System import *
 pd.options.display.max_rows
 pd.options.display.max_columns
 
-df = pd.DataFrame()
-df = pd.read_csv("sampleData.csv")
-print(df)
-
-def connect_server():
+def connect_server(server):
     piSystems = PISystems()
-    piSystem = piSystems["net1552.net.ucf.edu"]
+    piSystem = piSystems[server]
     databases = piSystem.Databases
     data = databases.GetEnumerator()
     for i in data:
@@ -37,7 +33,7 @@ def connect_server():
             continue
     return None
 
-def get_table(table_name, database = "PVStations", server = "net1552.net.ucf.edu"):
+def get_table(table_name, save_location, database = "PVStations", server = "net1552.net.ucf.edu"):
 
     '''
     This function provides a way to receive tables that reside in PI System Explorer.
@@ -47,6 +43,9 @@ def get_table(table_name, database = "PVStations", server = "net1552.net.ucf.edu
     -----------
     table_name : string
         Name of desired table 
+        
+    save_location : string
+        Address where you want the table csv to be saved
         
     database : string, default "PVStations"
         Database where the table resides
@@ -61,33 +60,44 @@ def get_table(table_name, database = "PVStations", server = "net1552.net.ucf.edu
     
     '''
 
-    piSystems = PISystems()   # variable = Class()
-    piSystem = piSystems[server]   #variable = class[instance]
-    databases = piSystem.Databases  #pisystem . properties
+    # Initialize PISystems
+    piSystems = PISystems()
+    # Choose a server from PISystems
+    piSystem = piSystems[server]
+    # Get all databases
+    databases = piSystem.Databases
+    # Parse list of database
     data = databases.GetEnumerator() #listdatabases . Methods()
 
+    # Choose database
     for i in data:
         if i.Name == database:
             break
         else:
             continue
     
+    # Get tables in database
     aftables = i.Tables
+    # Parse list of tables
     tables = aftables.GetEnumerator()
 
+    # Choose table
     for j in tables:
         if j.Name == table_name:
             break
         else:
             continue
 
+    # Initialize lists
     lst = []
     rowlst = []
     maxi = 0
     
+    # Get number of columns
     for col in j.Table.Columns:
         maxi+=1
 
+    # Create list of lists that has data
     for row in j.Table.Rows:
         i = 0
         rowlst = []
@@ -98,10 +108,14 @@ def get_table(table_name, database = "PVStations", server = "net1552.net.ucf.edu
             if i == maxi:
                 lst.append(rowlst)
             
-    
+    # Convert list of lists to dataframe
     table_final = pd.DataFrame.from_records(lst)
     print(table_final)
-    return 0
+    
+    # Save dataframe as CSV
+    table_final.to_csv(save_location)
+    
+    return table_final
 
 def get_value(path, database, start_time, end_time, interval):
     attribute = AFAttribute.FindAttribute(path, database)
@@ -114,10 +128,8 @@ def get_value(path, database, start_time, end_time, interval):
             print("Value {0}, Timestamp {1}".format(value.Value, value.Timestamp))
             
 if __name__ == "__main__":
-    database = connect_server()
+    database = connect_server('net1552.net.ucf.edu')
     if database is not None:
-#        interval = AFTimeSpan(0,0,0,1,0)
-#        result = get_value("\\8157_UCF_FSEC\\MET1|Direct_Irr_Av" , database, "-10d", "*", interval)
-        get_table("ABB details")
+        get_table("NIST_Insitu_IV", 'table_final_test.csv')
     else:
-        print("not working")
+        print("Connection to database is prohibited")
