@@ -85,11 +85,11 @@ def run_mysql(query, host, port, database, username, password):
 if __name__ == "__main__":
     
     # Set the variables needed for run_mysql function
-    host = '74.235.221.139'
-    port = '7213'
-    username = 'pordis'
-    password = 'H)k6S!s5@2'
-    database = 'iv'
+    host = ''
+    port = ''
+    username = ''
+    password = ''
+    database = ''
     
     # Query the trace_id in MySQL
     trace_id_query_S1 = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id FROM iv.trace ORDER BY datetime DESC;"
