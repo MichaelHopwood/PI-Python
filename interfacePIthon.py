@@ -30,8 +30,13 @@ def get_tag_snapshot(tagname):
     piServers = PIServers()
     piServer = piServers['net1552.net.ucf.edu']
     tag = PIPoint.FindPIPoint(piServer, tagname)  
-    lastData = tag.Snapshot()  
-    return lastData.Value
+    lastData = tag.Snapshot()
+
+    if str(type(lastData.Value)) == "<class 'OSIsoft.AF.Asset.AFEnumerationValue'>":
+        value = 'no val'
+    else:
+        value = lastData.Value
+    return value
 
 def Store_Vals(df, valuecol, pointname):
     '''
@@ -92,32 +97,30 @@ def get_mysql_data(trace_id, parameter, string):
     # Create dataframe of datetime, groupchannel_name, and trace_id
     df_trace = pd.DataFrame(traceid_list, columns=['datetime', 'group', 'trace_id']) 
     
-    # Query the current trace_id in the PI System
-    cur_traceid = int(get_tag_snapshot(trace_id))
-    
-    # If no value present in PI System, set trace_id locally to 1100
+    # If no value present in PI System, set trace_id locally to 1240
     # else, use the last value in PI System
-    if cur_traceid is None:
+    if get_tag_snapshot(trace_id) == 'no val':
         if string == '8157_S1':
-            cur_traceid = 1141
+            cur_traceid = 1241
         elif string == '8157_S2':
-            cur_traceid = 1140
-    elif cur_traceid == df_trace['trace_id'][0]:
-        f.write("No updated values.\nSleeping until next prompt...\n")
-        f.flush()
-        sys.exit()
+            cur_traceid = 1240
     else:
         cur_traceid = int(get_tag_snapshot(trace_id))
 
-        
     f.write("Using trace_id: {0}\n".format(cur_traceid))
     f.flush()
 
-    # Get index of sql table where the last pi value is located  
+    # Get index of mysql table where the last pi value is located  
     index_PiVal = df_trace[df_trace['trace_id'] == cur_traceid].index.tolist()
     
     # String value of latest index in PI System
     index_query = str(index_PiVal[0])
+
+    # If no update from table, stop everything
+    if index_query == 0:
+        f.write("No updated values.\nSleeping until next prompt...\n")
+        f.flush()
+        sys.exit()
     
     # concatenate SQL query to have the index_query length 
     query = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id, exclude, " + parameter + " FROM iv.trace WHERE groupchannel_name = " +f'"{string}"'  + " ORDER BY datetime DESC LIMIT 0, " + index_query + ";"
@@ -137,6 +140,7 @@ def get_mysql_data(trace_id, parameter, string):
     # Ensure that dataframe is in order
     df.sort_values(['trace_id'], inplace=True)
     df.set_index(df['datetime'], inplace=True)
+
     return df
     
     
@@ -184,37 +188,37 @@ if __name__ == "__main__":
     f.write('=========================================\n')
     f.flush()
     # string 1, current
-    trace_id = '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_1.trace_id'
+    trace_id = '8157_UCF.UCF_Inverter_1.CB_1.S_1.trace_id'
     string = '8157_S1'
     parameter = 'current'
     df = get_mysql_data(trace_id, parameter, string)
     output_df= reformat_IV(df)
-    Store_Vals(output_df, parameter, '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_1.IV_I')
+    Store_Vals(output_df, parameter, '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_I')
      
     # string 1, voltage
     string = '8157_S1'
     parameter = 'voltage'
     df = get_mysql_data(trace_id, parameter, string)
     output_df= reformat_IV(df)
-    Store_Vals(output_df, parameter, '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_1.IV_V')   
+    Store_Vals(output_df, parameter, '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_V')   
     
     # string 1, trace_id
     Store_Vals(df, 'trace_id', trace_id)
     
     # string 2, current
-    trace_id = '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_2.trace_id'
+    trace_id = '8157_UCF.UCF_Inverter_1.CB_1.S_2.trace_id'
     string = '8157_S2'
     parameter = 'current'
     df = get_mysql_data(trace_id, parameter, string)
     output_df= reformat_IV(df)
-    Store_Vals(output_df, parameter, '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_2.IV_I')  
+    Store_Vals(output_df, parameter, '8157_UCF.UCF_Inverter_1.CB_1.S_2.IV_I')  
     
     # string 2, voltage
     string = '8157_S2'
     parameter = 'voltage'
     df = get_mysql_data(trace_id, parameter, string)
     output_df= reformat_IV(df)
-    Store_Vals(output_df, parameter, '8157_UCF_FSEC.UCF_Inverter_1.CB_1.S_2.IV_V')
+    Store_Vals(output_df, parameter, '8157_UCF.UCF_Inverter_1.CB_1.S_2.IV_V')
     
     # string 2, trace_id
     Store_Vals(df, 'trace_id', trace_id)
