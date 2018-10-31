@@ -117,10 +117,10 @@ def get_mysql_data(trace_id, parameter, string):
     index_query = str(index_PiVal[0])
 
     # If no update from table, stop everything
-    if index_query == 0:
+    if index_query == '0':
         f.write("No updated values.\nSleeping until next prompt...\n")
         f.flush()
-        sys.exit()
+        sys.exit(1)
     
     # concatenate SQL query to have the index_query length 
     query = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id, exclude, " + parameter + " FROM iv.trace WHERE groupchannel_name = " +f'"{string}"'  + " ORDER BY datetime DESC LIMIT 0, " + index_query + ";"
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     # Calculate total script duration in seconds
     delta = (pd.to_datetime(now_1) - pd.to_datetime(now)).total_seconds()
     
-    f.write('Average rate per trace_id: {0}\n'.format((delta / num_trace) / 60))
+    f.write('Average rate per trace_id: {0:.2f}\n'.format((delta / num_trace) / 60))
     f.write('\nEnd of iteration:\n{0}\n'.format(now_1))
     f.close()
     
