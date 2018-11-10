@@ -227,7 +227,7 @@ def statusPrint(statusList, outputList):
             
     #Check if num values in current = num values in voltage
     for output in outputList:
-        if(len(output[0]['vals']) != len(output[0]['vals'])):
+        if(len(output[0]['vals']) != len(output[1]['vals'])):
             f.write('FAILURE: The number of values for Current does not equal the number of values for Voltage.\n')    
             f.flush()
             flag1 = 1
