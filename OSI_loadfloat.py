@@ -58,7 +58,7 @@ def Summarize_PI_Data(pitag, start, end, freq, timestampcalc = AFTimestampCalcul
 
 
 def Summarize_Multi_PIData(pitags, start, end, freq, timestampcalc = AFTimestampCalculation.MostRecentTime, complete_cases = False, summarytype = AFSummaryTypes.Maximum):
-    #Creates a dataframe with historical data for multiple points
+    '''Creates a dataframe with historical data for multiple points'''
     mult_df = pd.DataFrame()
     
     for tag in pitags:    
@@ -71,6 +71,17 @@ def Summarize_Multi_PIData(pitags, start, end, freq, timestampcalc = AFTimestamp
     return mult_df
 
 def get_tag_values(pitag,timestart,timeend):
+    '''
+    Get multiple tags from PI Point and return in a single dataframe
+    
+    Parameters:
+        pitaglist: string of pi tag's data archive name
+        timestart: str, datetime format of start time
+        timeend: str, datetime format of end time
+        
+    Return:
+        df: datetime index and column of queried tag
+    '''
     piServers = PIServers()
     piServer = piServers['net1552.net.ucf.edu']
     tag = PIPoint.FindPIPoint(piServer, pitag) 
@@ -87,6 +98,17 @@ def get_tag_values(pitag,timestart,timeend):
     return df
 
 def get_mult_values(pitaglist, timestart, timeend):
+    '''
+    Get multiple tags from PI Point and return in a single dataframe
+    
+    Parameters:
+        pitaglist: list of str
+        timestart: str, datetime format of start time
+        timeend: str, datetime format of end time
+        
+    Return:
+        mult_df: datetime index and columns of each queried tag
+    '''
     mult_df = pd.DataFrame()
     
     for pitag in pitaglist:
@@ -96,6 +118,19 @@ def get_mult_values(pitaglist, timestart, timeend):
     return mult_df
 
 def get_IV(IVlist, trace_id, timestart, timeend, skipNaN = True):
+    '''
+    Get IV data from PI System and parse it one dataframe per trace
+    
+    Parameters:
+        IVlist: list of str, tags for current and voltage
+        trace_id: str, tag for trace_id
+        timestart: str, datetime format of start time
+        timeend: str, datetime format of end time
+        skipNan: optional boolean, if True, removes dataframes with NaN values
+        
+    Returns:
+        df_list: list of databases
+    '''
     timeList = []
     df_traceID = get_tag_values(trace_id, timestart, timeend)
     trace_list = list(df_traceID.index.values)
@@ -125,25 +160,38 @@ def get_IV(IVlist, trace_id, timestart, timeend, skipNaN = True):
                 del df_list[x]
                 print("removing element: ", x)
 
-    return df_list
+    return df_list  
 
-def calculate_Rsh(IVcurve):
-    I = '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_I'
-    V = '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_V'
+def save_IV(df_list, saveName):
+    '''
+    Save all dataframes in multiple csv files
     
-    slope1 = (IVcurve[I][100] - IVcurve[I][0]) / (IVcurve[V][100] - IVcurve[V][0])
-    Rsh1 =  -1 / slope1
-    print("1:", Rsh1)
+    Parameters:
+        df_list: dataframe
+        saveName: str, name that csv files will be saved as
+    '''
+    for i in range(len(df_list)):
+        df_list[i].to_csv(saveName + str(i) + '.csv')
+
+def get_IV_csv(IVlist, saveName, trace_id, timestart, timeend, skipNaN = True):
+    '''
+    Gets the list of dataframes of IV data and saves the dataframes 
+    in their own csv files
     
-    slope2 = (IVcurve[I][75] - IVcurve[I][0]) / (IVcurve[V][75] - IVcurve[V][0])
-    Rsh2 =  -1 / slope2
-    print("2:", Rsh2)
-    
-    slope3 = (IVcurve[I][50] - IVcurve[I][0]) / (IVcurve[V][50] - IVcurve[V][0])
-    Rsh3 =  -1 / slope3
-    print("3:", Rsh3)
-    
-    return
+    Parameters:
+        IVlist: list of str, tags for current and voltage
+        saveName: str, the name of the saved csv files
+        trace_id: str, tag for trace_id
+        timestart: str, datetime format of start time
+        timeend: str, datetime format of end time
+        skipNan: optional boolean, if True, removes dataframes with NaN values
+        
+    Returns:
+        df_list: list of databases
+    '''
+    df_list = get_IV(IVlist, trace_id, timestart, timeend, skipNaN)
+    save_IV(df_list, saveName)
+    return df_list
         
 def rename__cols(df):
     new_colnames = []
@@ -155,9 +203,11 @@ def rename__cols(df):
 def Store_Vals(df, valuecol, pointname):
     '''
     Store values into the PI System
-    df: dataframe that will be stored
-    valuecol: column name that is to be stored for the point
-    pointname: name of the point where this data will be published
+    
+    Parameters:
+        df: dataframe that will be stored
+        valuecol: column name that is to be stored for the point
+        pointname: name of the point where this data will be published
     '''
     #Function for storing values from a dataframe back into PI. Index of the dataframe needs to be in 
     #datetime format
@@ -192,10 +242,19 @@ def run_mysql(query, host, port, database, username, password):
     mydb.close()
     return data        
 
-def get_mysql_data(trace_id, string):
-
+def get_mysql_data(string, table):
+    '''
+    Query mySQL server and return dataframe
+    
+    Parameters:
+        string: str, mySQL string name (i.e. 8157S1)
+        table: str, mySQL table name (i.e. iv.trace)
+        
+    Return:
+        df_trace: dataframe returned with information from query
+    '''
     # query the trace_id in mySQL
-    trace_id_query = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id FROM iv.trace WHERE groupchannel_name = " +f'"{string}"'  + "ORDER BY datetime DESC;"
+    trace_id_query = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id FROM " + f'"{table}"' + "WHERE groupchannel_name = " +f'"{string}"'  + "ORDER BY datetime DESC;"
     traceid_list = run_mysql(trace_id_query, host, port, database, username, password)
     
     # Create dataframe of datetime, groupchannel_name, and trace_id
@@ -204,13 +263,16 @@ def get_mysql_data(trace_id, string):
 
     
 if __name__ == "__main__":
-    pitaglist = ['8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_I', '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_V']
-    IV_trace = '8157_UCF.UCF_Inverter_1.CB_1.S_1.Isc'
-    timestart = '11/07/2018 1:00:00 PM'
-    timeend = '11/07/2018 4:30:00 PM'
+    IVlist = ['8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_I', '8157_UCF.UCF_Inverter_1.CB_1.S_1.IV_V']
+    trace_id = '8157_UCF.UCF_Inverter_1.CB_1.S_1.trace_id'
+    timestart = '11/07/2018 11:00:00 AM'
+    timeend = '11/07/2018 1:30:00 PM'
+    pitaglist = ['8157_UCF.UCF_Inverter_1.CB_1.S_1.Isc', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Voc', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Ipmax', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Pmax', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Vpmax']
+    saveName = 'testingSave'
 
-    results = get_IV(pitaglist, IV_trace, timestart, timeend, skipNaN = True)
+    df_list = get_IV_csv(IVlist, saveName, trace_id, timestart, timeend, skipNaN = True)
 
+    
     
         
     
