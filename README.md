@@ -11,16 +11,16 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 
 ### OSI_loadfloat
 ##### Access PI information by connecting to the archive
-| Function | Description | Inspiration |
-| ------ | ----------- | --------- |
-| Summarize_PI_Data   | Grabs data from PI by querying values at periodic timestamps and using interpolated values if no real value is present. | __[RobMulla](https://github.com/RobMulla/PIMachineLearning/blob/master/Code/OSI.py)__
-| Summarize_Multi_PIData | Iterates Summarize_PI_Data to create a larger dataframe with more queried tags. | __[RobMulla](https://github.com/RobMulla/PIMachineLearning/blob/master/Code/OSI.py)__
-| get_tag_values  | Grab actual values from PI System within queried time range | `Eric Schneller and Siyu Guo` and __[Rafa](https://pisquare.osisoft.com/people/rborges/blog/2016/08/01/pi-and-python-pithon)__
+| Function | Description |
+| ------ | ----------- | 
+| Summarize_PI_Data   | Grabs data from PI by querying values at periodic timestamps and using interpolated values if no real value is present. | 
+| Summarize_Multi_PIData | Iterates Summarize_PI_Data to create a larger dataframe with more queried tags. | 
+| get_tag_values  | Grab actual values from PI System within queried time range | 
 | get_mult_values  | Query list of pi tags and add to dataframe. *Currently, values must have the same timestamp* | |  
 | get_IV  | Grab all IV data within inputted time range. Returns list of Dataframes | |  
 | save_IV  | Save all dataframes in multiple csv files | | 
 | get_IV_csv  | Combines `get_IV` and `save_IV` into one function| | 
-| Store_Vals  | Store values from dataframe into PI System| __[RobMulla](https://github.com/RobMulla/PIMachineLearning/blob/master/Code/OSI.py)__| 
+| Store_Vals  | Store values from dataframe into PI System| | 
 
 
 ### Pithon_Loadfloat_Systems
