@@ -14,7 +14,7 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | Function | Description |
 | ------ | ----------- | 
 | Summarize_PI_Data   | Grabs data from PI by querying values at periodic timestamps and using interpolated values if no real value is present. | 
-| Summarize_Multi_PIData | Iterates Summarize_PI_Data to create a larger dataframe with more queried tags. | 
+| Summarize_Multi_PIData | Iterates `Summarize_PI_Data` to create a larger dataframe with more queried tags. | 
 | get_tag_values  | Grab actual values from PI System within queried time range | 
 | get_mult_values  | Query list of pi tags and add to dataframe. *Currently, values must have the same timestamp* | |  
 | get_IV  | Grab all IV data within inputted time range. Returns list of Dataframes | |  
