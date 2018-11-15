@@ -3,7 +3,7 @@ Python code targeting and using PI data
 
 `OSI_loadfloat.py` - contains functions that focus on interactions with the PI System by connecting to the data archive directly
 
-`Pithon_Loadfloat_Systems.py` - contains functions for getting information from the PI System by connecting to the AF Client
+`Pithon_Loadfloat_Systems.py` - contains functions for getting information from the PI System by connecting to the AF Server
 
 `interfacePithon.py` - active code running on the Interface machine which grabs data from mySQL server, parses the data, adds a datetime timestamp, and stores into the PI System
 
@@ -25,8 +25,23 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 
 ### Pithon_Loadfloat_Systems
 ##### Access PI information by connecting to the system 
-| Function | Description | Inspiration |
-| ------ | ----------- | ---------|
-| get_table   | Returns dataframe of table saved in PI System. | |
+| Function | Description |
+| ------ | ----------- |
+| get_table   | Returns dataframe of table saved in PI System. |
 | get_value | Grab value of tag in inputted range and interval |
+
+### interfacePithon
+| Function | Description |
+| ------ | ----------- |
+| get_tag_snapshot   | Retrieved from __[8157_UCF](https://github.com/8157-UCF-JWW/8157UCF/blob/master/P_Functions/Pithon_functions.py)__ and altered to check if PI Point has data  |
+| get_tag_values | Same function as in `OSI_loadfloat` |
+| Store_Vals | Same function as in `OSI_loadfloat` with a buffer added on top of it|
+| run_mysql | Connect to mySQL database|
+| get_mysql_data | Query mySQL data and return into a dataframe|
+| reformat_IV | Parse and timestamp a list of tuples so that the data can be formatted to store into the PI System |
+| dataQuality | A check of the data quality for mySQL to PI data stream for IV trace data.  Quality is ensured by comparing the length of the IV list with the temporary dataframe AND the stored trace in the PI System  |
+| statusPrint | Print status from `dataQuality` in interfaceLogs and write a status of 0 (safe) or 1 (bad) to a tag in the PI System |
+| extractTransformLoad | Combine `get_mysql_data`, `reformat_IV`, and `Store_Vals` into one function because it will be iterrated for each tag that is stored |
+
+
 
