@@ -31,7 +31,7 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | get_value | Grab value of tag in inputted range and interval |
 
 ### interfacePithon 
-*Decomissioned due to lack of development of AFBufferOption on PI end*
+*Decomissioned on 11/19/2018 due to lack of development of AFBufferOption on PI end*
 
 | Function | Description |
 | ------ | ----------- |
