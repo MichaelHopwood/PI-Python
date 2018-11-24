@@ -30,7 +30,8 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | get_table   | Returns dataframe of table saved in PI System. |
 | get_value | Grab value of tag in inputted range and interval |
 
-### interfacePithon
+### interfacePithon 
+*decomissioned due to lack of development of AFBufferSystem on PI end*
 | Function | Description |
 | ------ | ----------- |
 | get_tag_snapshot   | Retrieved from __[8157_UCF](https://github.com/8157-UCF-JWW/8157UCF/blob/master/P_Functions/Pithon_functions.py)__ and altered to check if PI Point has data  |
