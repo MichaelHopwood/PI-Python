@@ -1,15 +1,15 @@
 # PI-Python
 Python code targeting and using PI data
 
-`OSI_loadfloat.py` - contains functions that focus on interactions with the PI System by connecting to the data archive directly
+`Pithon_Servers.py` - contains functions that focus on interactions with the PI System by connecting to the data archive directly
 
-`Pithon_Loadfloat_Systems.py` - contains functions for getting information from the PI System by connecting to the AF Server
+`Pithon_Systems.py` - contains functions for getting information from the PI System by connecting to the AF Server
 
 `interfacePithon.py` - active code running on the Interface machine which grabs data from mySQL server, parses the data, adds a datetime timestamp, and stores into the PI System
 
 Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documentation/PI-AF-SDK/html/eb961f37-282a-43d2-8f8c-f19ce07d9fa8.htm)__
 
-### OSI_loadfloat
+### Pithon Servers
 ##### Access PI information by connecting to the archive
 | Function | Description |
 | ------ | ----------- | 
@@ -23,7 +23,7 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | Store_Vals  | Store values from dataframe into PI System| | 
 
 
-### Pithon_Loadfloat_Systems
+### Pithon_Systems
 ##### Access PI information by connecting to the system 
 | Function | Description |
 | ------ | ----------- |
@@ -34,8 +34,8 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | Function | Description |
 | ------ | ----------- |
 | get_tag_snapshot   | Retrieved from __[8157_UCF](https://github.com/8157-UCF-JWW/8157UCF/blob/master/P_Functions/Pithon_functions.py)__ and altered to check if PI Point has data  |
-| get_tag_values | Same function as in `OSI_loadfloat` |
-| Store_Vals | Same function as in `OSI_loadfloat` with a buffer added on top of it|
+| get_tag_values | Same function as in `Pithon_Servers` |
+| Store_Vals | Same function as in `Pithon_Servers` with a buffer added on top of it|
 | run_mysql | Connect to mySQL database|
 | get_mysql_data | Query mySQL data and return into a dataframe|
 | reformat_IV | Parse and timestamp a list of tuples so that the data can be formatted to store into the PI System |
