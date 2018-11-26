@@ -13,6 +13,7 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 ##### Access PI information by connecting to the archive
 | Function | Description |
 | ------ | ----------- | 
+| get_any_tag_values | Get values for all tags from any 8157 data source (mySQL or PI) | 
 | Summarize_PI_Data   | Grabs data from PI by querying values at periodic timestamps and using interpolated values if no real value is present. | 
 | Summarize_Multi_PIData | Iterates `Summarize_PI_Data` to create a larger dataframe with more queried tags. | 
 | get_tag_values  | Grab actual values from PI System within queried time range | 
