@@ -30,7 +30,7 @@ from OSIsoft.AF.UnitsOfMeasure import *
 piServers = PIServers()
 piServer = piServers['net1552.net.ucf.edu']
 
-def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8157_S1', save_csv = False, saveName = 'defaultName'):
+def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8157_S1', save_csv = False, saveName = 'defaultName', parse = False, combine_iv_data = False):
     '''
     Get values for all tags from any source. 
     
@@ -71,6 +71,7 @@ def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8
     password = 'INPUT_PASSWORD_HERE'
     database = 'INPUT_DATABASE_HERE'
     
+    # To be used later when determining which table should be queried
     trace_table_parameter_list = ['trace_id', 'datetime', 'groupchannel', 'groupchannel_name', 'trace_type', 'num_points', 'current', 'voltage', 'irradiance', 'aux', 'isc', 'voc', 'pmax', 'ipmax', 'vpmax', 'ff', 'avg_irradiance', 'avg_aux', 'Rch', 'Rsh', 'Rsh_r2', 'Rs', 'Rs_r2', 'additional_data', 'exclude', 'extract', 'analysis_datetime', 'analysis_code_version', 'analysis_classification', 'analysis_user_verification', 'analysis_i', 'analysis_v', 'analysis_isc', 'analysis_voc', 'analysis_pmax', 'analysis_ipmax', 'analysis_vpmax', 'analysis_ff']
     
     mysql_timestart = datetime.datetime.strptime(timestart, '%m/%d/%Y %I:%M:%S %p').strftime('%Y-%m-%d %H:%M:%S')
@@ -84,19 +85,64 @@ def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8
                 query = "SELECT datetime, groupchannel_name, " + parameter[i] + " FROM iv.trace WHERE (datetime BETWEEN " + f'"{mysql_timestart}"' + " AND " + f'"{mysql_timeend}"' + ") AND (groupchannel_name = " + f'"{element}"' + ");"
             data = run_mysql(query, host, port, database, username, password)
             df = pd.DataFrame(data, columns=['datetime', 'group', parameter[i]])
+            
+            if parse is True:
+                df = reformat_IV(df, parameter[i])
+                
         
         else:
             df = get_tag_values(parameter[i], timestart, timeend)
             groups.append(0)
         
         results.append(df)
+        
+    if combine_iv_data is True:
+        new_results = []
+        
+        for i in range(len(groups)):
+            if groups[i] == 0:
+                new_results.append(results[i])
+                
+        iv_df = pd.DataFrame()
+        for i in range(len(groups)):
+            if groups[i] == 1:
+                iv_df[parameter[i]] = results[i][parameter[i]]
 
+        new_results.append(iv_df)
+        results = new_results
+        
     if save_csv is True:
         for i in range(len(results)):
             results[i].to_csv(saveName + '_' + parameter[i] + '_' + str(i) + '.csv')
     
     return results
     
+def reformat_IV(df, parameter):
+    '''Create dataframe and parse out the current values with correct datetime
+     Datetime will be an incrementing millisecond for each value in list 
+     at a certain timestamp
+    '''
+    output_df = pd.DataFrame(columns=['datetime', parameter])
+    
+    i = 0
+    previous_datetime = 0
+    for _, row in df.iterrows():
+        for value in row[parameter].split(','):
+            if previous_datetime != pd.to_datetime(row['datetime']):
+                i = 0
+                previous_datetime = pd.to_datetime(row['datetime'])
+            else:
+                i += 1
+            output_df = output_df.append({'datetime': pd.to_datetime(row['datetime']) + pd.to_timedelta(f"{i}ms"), parameter: value}, ignore_index=True)
+
+    # eliminate Nan values that were created by extra comma at end of each list
+    output_df.dropna(0, how='any', inplace=True)
+    
+    # set index equal to datetime column
+    output_df.set_index(output_df['datetime'], inplace=True)
+    
+    return output_df
+
 
 def Summarize_PI_Data(pitag, start, end, freq, timestampcalc = AFTimestampCalculation.MostRecentTime, summarytype = AFSummaryTypes.Maximum):
     '''Creates dataframe of historical max hourly values for a single PI point'''
@@ -337,10 +383,36 @@ def get_mysql_data(string, table):
 
 
 if __name__ == "__main__":   
-    results = get_any_tag_values(['current', 'voltage', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Isc'], timestart = '10/05/2018 9:00:00 AM', timeend = '10/05/2018 4:00:00 PM', element = '8157_S1', save_csv = False)
-    
-    I = results[0]
-    V = results[1]
-    Isc = results[2]
-    
+    results = get_any_tag_values(['current', 'voltage', '8157_UCF.UCF_Inverter_1.CB_1.S_2.FF', '8157_UCF.UCF_Inverter_1.CB_1.S_2.Ipmax'], timestart = '10/05/2018 12:05:00 PM', timeend = '10/05/2018 4:35:00 PM', element = '8157_S1', save_csv = False, parse = True, combine_iv_data = True)
 
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
