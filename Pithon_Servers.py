@@ -4,7 +4,6 @@ Created on Tue Nov 20 16:39:58 2018
 
 @author: Michael Hopwood
 """
-
 import sys
 import clr
 
@@ -13,8 +12,6 @@ import numpy as np
 import datetime
 import mysql.connector
 import time
-#from matplotlib import pyplot
-import matplotlib.pyplot as plt
 
 sys.path.append('C:\\Program Files (x86)\\PIPC\\AF\\PublicAssemblies\\4.0')  
 clr.AddReference('OSIsoft.AFSDK')
@@ -30,12 +27,12 @@ from OSIsoft.AF.UnitsOfMeasure import *
 piServers = PIServers()
 piServer = piServers['net1552.net.ucf.edu']
 
-def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8157_S1', save_csv = False, saveName = 'defaultName', parse = False, combine_iv_data = False):
+def get_any_tag_values(parameters, timestart, timeend, element = '8157_S1', save_csv = False, save_name = 'defaultName', save_location = None, parse = False, combine_iv_data = False):
     '''
     Get values for all tags from any source. 
     
     PARAMETERS:
-        parameter: str, data name
+        parameters: list of str, data name
             PI System data: tag data archive name
             mySQL data: IV trace data - input 'current' or 'voltage' for IV trace data
         timestart: str, datetime of intended start of query
@@ -45,21 +42,25 @@ def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8
         element: str, specify which apparatus you want the data for
                  If you want data for everything, use 'any'
                  Current Possibilities: '8157_S1', '8157_S2', 'any'
-                 
-    EXAMPLES: 
-    1. IF you want to query something including current or voltage from trace (IV_I, IV_V), the element parameter is required:
-        
-        get_any_tag_values(['current', 'voltage', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Isc'], timestart = '10/05/2018 9:00:00 AM', timeend = '10/05/2018 4:00:00 PM', element = 'any')
+        save_csv: bool, state whether you want the dataframes saved as csv files
+                If True, files will be saved
+        save_name: str, csv file name
+                Name appended with the parameter's name and the index in the parameter list
+                i.e. defaultName_current_1.csv
+        save_location: str, specify location where csv is saved
+                if None, csv saved in directory where python file is located
+                i.e. 'C:\Documents' will save the csv in your Documents folder
+        parse: bool
+                if True, parse the IV data into pairs instead of lists
+        combine_iv_data: bool
+                if True, place current and voltage data in the same dataframe
+
+    If trace data (IV_I, IV_V) is included in query, the 'element' parameter must be included in the function call.
             
-    The list of strings are the column titles in the mySQL database
+            To PARSE trace data out of their lists, set parse to True
+            To COMBINE trace data into one dataframe, set combine_iv_data to True
+            
     
-    2. IF you want to query something without including current or voltage from trace
-        
-        get_any_tag_values(['8157_UCF.UCF_Inverter_1.CB_1.S_1.Isc', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Voc'], timestart = '10/05/2018 9:00:00 AM', timeend = '10/05/2018 4:00:00 PM')
-    
-    The list of strings are the tag names saved in the net1552.net.ucf.edu data archive
-    
-    ** IF CURRENT OR VOLTAGE FROM TRACE IS INCLUDED IN GROUP OF QUERY, MUST INCLUDE 'element' PARAMETER **
     '''
     
     groups = []
@@ -76,47 +77,82 @@ def get_any_tag_values(parameter, timestart = None, timeend = None, element = '8
     
     mysql_timestart = datetime.datetime.strptime(timestart, '%m/%d/%Y %I:%M:%S %p').strftime('%Y-%m-%d %H:%M:%S')
     mysql_timeend = datetime.datetime.strptime(timeend, '%m/%d/%Y %I:%M:%S %p').strftime('%Y-%m-%d %H:%M:%S')
-    for i in range(len(parameter)):
-        if(parameter[i] == 'current' or parameter[i] == 'voltage'):
+    for i in range(len(parameters)):
+        
+        # access the mySQL database if the user queries IV_I or IV_V data
+        if(parameters[i] == 'current' or parameters[i] == 'voltage'):
+            # append ID to group for later use 
+            # ID = 1 means IV data
             groups.append(1)
             if element == 'any':
-                query = "SELECT datetime, groupchannel_name, " + parameter[i] + " FROM iv.trace WHERE (datetime BETWEEN " + f'"{mysql_timestart}"' + " AND " + f'"{mysql_timeend}"' + ");"
+                query = "SELECT datetime, groupchannel_name, " + parameters[i] + " FROM iv.trace WHERE (datetime BETWEEN " + f'"{mysql_timestart}"' + " AND " + f'"{mysql_timeend}"' + ");"
             else:
-                query = "SELECT datetime, groupchannel_name, " + parameter[i] + " FROM iv.trace WHERE (datetime BETWEEN " + f'"{mysql_timestart}"' + " AND " + f'"{mysql_timeend}"' + ") AND (groupchannel_name = " + f'"{element}"' + ");"
+                query = "SELECT datetime, groupchannel_name, " + parameters[i] + " FROM iv.trace WHERE (datetime BETWEEN " + f'"{mysql_timestart}"' + " AND " + f'"{mysql_timeend}"' + ") AND (groupchannel_name = " + f'"{element}"' + ");"
             data = run_mysql(query, host, port, database, username, password)
-            df = pd.DataFrame(data, columns=['datetime', 'group', parameter[i]])
+            df = pd.DataFrame(data, columns=['datetime', 'group', parameters[i]])
+            df.set_index(df['datetime'], inplace = True)
             
+            # parse data if true by using the reformat_IV function
             if parse is True:
-                df = reformat_IV(df, parameter[i])
+                df = reformat_IV(df, parameters[i])
                 
-        
+            # remove datetime column, datetime is saved in index
+            df.drop(df.columns[[0]], axis=1, inplace = True)
+            
         else:
-            df = get_tag_values(parameter[i], timestart, timeend)
+            # Query data from PI Data Archive
+            # Group ID = 0 means non-IV data  
+            df = get_tag_values(parameters[i], timestart, timeend)
             groups.append(0)
         
         results.append(df)
         
+    if 'voltage' in parameters:
+        if 'current' in parameters:
+            IV_flag = 1
+        else:
+            IV_flag = 0
+    else:
+        IV_flag = 0
+    
     if combine_iv_data is True:
-        new_results = []
-        
-        for i in range(len(groups)):
-            if groups[i] == 0:
-                new_results.append(results[i])
-                
-        iv_df = pd.DataFrame()
-        for i in range(len(groups)):
-            if groups[i] == 1:
-                iv_df[parameter[i]] = results[i][parameter[i]]
+        if IV_flag == 1:
+            new_results = []
+            new_params = []
+            
+            # keep non-IV data constant
+            for i in range(len(groups)):
+                if groups[i] == 0:
+                    new_results.append(results[i])
+                    new_params.append(parameters[i])
+                    
+            # combine IV data into one dataframe
+            iv_df = pd.DataFrame()
+            for i in range(len(groups)):
+                if groups[i] == 1:
+                    iv_df[parameters[i]] = results[i][parameters[i]]
+    
+            # append IV data to results
+            new_results.append(iv_df)
+            new_params.append('IV_data')
+            
+            results = new_results
+            parameters = new_params
 
-        new_results.append(iv_df)
-        results = new_results
-        
+        else:
+            print("'combine_iv_data' parameter is set to True but both components of an IV trace are not included in the data query.\n")
+            
+    # save csv with save_name and parameter values
     if save_csv is True:
         for i in range(len(results)):
-            results[i].to_csv(saveName + '_' + parameter[i] + '_' + str(i) + '.csv')
-    
+            if save_location is not None:
+                results[i].to_csv(save_location + '\\' +  save_name + '-' + parameters[i] + '_' + str(i) + '.csv')
+                
+            else:
+                results[i].to_csv(save_name + '-' + parameters[i] + '_' + str(i) + '.csv')
+            
     return results
-    
+
 def reformat_IV(df, parameter):
     '''Create dataframe and parse out the current values with correct datetime
      Datetime will be an incrementing millisecond for each value in list 
@@ -234,7 +270,8 @@ def get_mult_values(pitaglist, timestart, timeend):
     mult_df = mult_df.dropna(axis=0, how='any')
     return mult_df
 
-def get_IV(IVlist, trace_id, timestart, timeend, save_name, skipNaN = True, saveCSV = False):
+# Decommissioned because IV data is not stored in the PI System anymore
+def get_PI_IV(IVlist, trace_id, timestart, timeend, save_name = 'default', skip_nan = True, save_csv = False):
     '''
     Get IV data from PI System and parse it one dataframe per trace
     
@@ -268,7 +305,7 @@ def get_IV(IVlist, trace_id, timestart, timeend, save_name, skipNaN = True, save
     for k in range(len(df_list)):
         if df_list[k].isnull().values.any() == True:
             print("There are NaN values in this dataframe. Beware!\nInvestigate to see where the NaN values are to resolve the issue.")
-            if skipNaN == True:
+            if skip_nan == True:
                 badIndexes.append(k)
 
     for x in range(len(df_list)):
@@ -276,49 +313,11 @@ def get_IV(IVlist, trace_id, timestart, timeend, save_name, skipNaN = True, save
             if badIndexes[y] == x:
                 del df_list[x]
                 print("removing element: ", x)
-
-    for i in range(len(df_list)):
-        df_list[i].to_csv(save_name + str(i) + '.csv')
+    if save_csv is True:
+        for i in range(len(df_list)):
+            df_list[i].to_csv(save_name + str(i) + '.csv')
     
     return df_list
-
-def save_IV(df_list, saveName):
-    '''
-    Save all dataframes in multiple csv files
-    
-    Parameters:
-        df_list: dataframe
-        saveName: str, name that csv files will be saved as
-    '''
-    for i in range(len(df_list)):
-        df_list[i].to_csv(saveName + str(i) + '.csv')
-
-def get_IV_csv(IVlist, saveName, trace_id, timestart, timeend, skipNaN = True):
-    '''
-    Gets the list of dataframes of IV data and saves the dataframes 
-    in their own csv files
-    
-    Parameters:
-        IVlist: list of str, tags for current and voltage
-        saveName: str, the name of the saved csv files
-        trace_id: str, tag for trace_id
-        timestart: str, datetime format of start time
-        timeend: str, datetime format of end time
-        skipNan: optional boolean, if True, removes dataframes with NaN values
-        
-    Returns:
-        df_list: list of databases
-    '''
-    df_list = get_IV(IVlist, trace_id, timestart, timeend, skipNaN)
-    save_IV(df_list, saveName)
-    return df_list
-        
-def rename__cols(df):
-    new_colnames = []
-    for col in df.columns:
-        new_colnames.append((col.split(".")[0]))
-    df.columns = new_colnames
-    return df
 
 def Store_Vals(df, valuecol, pointname):
     '''
@@ -360,59 +359,20 @@ def run_mysql(query, host, port, database, username, password):
     
     data = mycursor.fetchall()
     mydb.close()
-    return data        
-
-def get_mysql_data(string, table):
-    '''
-    Query mySQL server and return dataframe
-    
-    Parameters:
-        string: str, mySQL string name (i.e. 8157S1)
-        table: str, mySQL table name (i.e. iv.trace)
-        
-    Return:
-        df_trace: dataframe returned with information from query
-    '''
-    # query the trace_id in mySQL
-    trace_id_query = "SELECT CAST(datetime AS datetime), CAST(groupchannel_name as BINARY), trace_id FROM " + f'"{table}"' + "WHERE groupchannel_name = " +f'"{string}"'  + "ORDER BY datetime DESC;"
-    traceid_list = run_mysql(trace_id_query, host, port, database, username, password)
-    
-    # Create dataframe of datetime, groupchannel_name, and trace_id
-    df_trace = pd.DataFrame(traceid_list, columns=['datetime', 'group', 'trace_id'])
-    return df_trace
-
+    return data                       
+                
 
 if __name__ == "__main__":   
-    results = get_any_tag_values(['current', 'voltage', '8157_UCF.UCF_Inverter_1.CB_1.S_2.FF', '8157_UCF.UCF_Inverter_1.CB_1.S_2.Ipmax'], timestart = '10/05/2018 12:05:00 PM', timeend = '10/05/2018 4:35:00 PM', element = '8157_S1', save_csv = False, parse = True, combine_iv_data = True)
 
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    # Example of how to use get_any_tag_values function
+    results = get_any_tag_values(parameters = ['current', 'voltage', '8157_UCF.UCF_Inverter_1.CB_1.S_1.Ipmax'],
+                                 timestart = '10/05/2018 12:05:00 PM',
+                                 timeend = '10/05/2018 12:35:00 PM',
+                                 element = 'any',
+                                 save_csv = True,
+                                 save_name = 'test',
+                                 save_location = 'Desktop',
+                                 parse = False,
+                                 combine_iv_data = True)
+        
+        

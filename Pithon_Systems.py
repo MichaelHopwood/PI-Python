@@ -33,7 +33,7 @@ def connect_server(server):
             continue
     return None
 
-def get_table(table_name, save_location, database = "PVStations", server = "net1552.net.ucf.edu"):
+def get_table(table_name, save_location = None, save_csv = False, save_name = 'default', database = "PVStations", server = "net1552.net.ucf.edu"):
 
     '''
     This function provides a way to receive tables that reside in PI System Explorer.
@@ -57,7 +57,6 @@ def get_table(table_name, save_location, database = "PVStations", server = "net1
     Returns
     -----------
     table : DataFrame
-    
     '''
 
     # Initialize PISystems
@@ -110,11 +109,16 @@ def get_table(table_name, save_location, database = "PVStations", server = "net1
             
     # Convert list of lists to dataframe
     table_final = pd.DataFrame.from_records(lst)
-    print(table_final)
     
-    # Save dataframe as CSV
-    table_final.to_csv(save_location)
-    
+    # save csv with save_name and parameter values
+    if save_csv is True:
+        if save_location is not None:
+            table_final.to_csv(save_location + '\\' +  save_name + '.csv')
+            
+        else:
+            table_final.to_csv(save_name + '.csv')
+                
+                
     return table_final
 
 def get_value(path, database, start_time, end_time, interval):
@@ -128,8 +132,11 @@ def get_value(path, database, start_time, end_time, interval):
             print("Value {0}, Timestamp {1}".format(value.Value, value.Timestamp))
             
 if __name__ == "__main__":
+    
+    # Example usage of Pithon Systems    
+    
     database = connect_server('net1552.net.ucf.edu')
     if database is not None:
-        get_table("NIST_Insitu_IV", 'table_final_test.csv')
+        table = get_table("ABB Details", save_location = None, save_csv = True, save_name = 'default')
     else:
         print("Connection to database is prohibited")
