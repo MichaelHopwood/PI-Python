@@ -6,6 +6,7 @@ Created on Tue Nov 20 16:39:58 2018
 """
 import sys
 import clr
+import os
 
 import pandas as pd
 import numpy as np
@@ -66,11 +67,13 @@ def get_any_tag_values(parameters, timestart, timeend, element = '8157_S1', save
     groups = []
     results = []
     
-    host = 'INPUT_IP_HERE'
-    port = 'INPUT_PORT_HERE'
-    username = 'INPUT_USERNAME_HERE'
-    password = 'INPUT_PASSWORD_HERE'
-    database = 'INPUT_DATABASE_HERE'
+
+    
+    host = ''
+    port = ''
+    username = ''
+    password = ''
+    database = ''
     
     # To be used later when determining which table should be queried
     trace_table_parameter_list = ['trace_id', 'datetime', 'groupchannel', 'groupchannel_name', 'trace_type', 'num_points', 'current', 'voltage', 'irradiance', 'aux', 'isc', 'voc', 'pmax', 'ipmax', 'vpmax', 'ff', 'avg_irradiance', 'avg_aux', 'Rch', 'Rsh', 'Rsh_r2', 'Rs', 'Rs_r2', 'additional_data', 'exclude', 'extract', 'analysis_datetime', 'analysis_code_version', 'analysis_classification', 'analysis_user_verification', 'analysis_i', 'analysis_v', 'analysis_isc', 'analysis_voc', 'analysis_pmax', 'analysis_ipmax', 'analysis_vpmax', 'analysis_ff']
@@ -146,8 +149,7 @@ def get_any_tag_values(parameters, timestart, timeend, element = '8157_S1', save
     if save_csv is True:
         for i in range(len(results)):
             if save_location is not None:
-                results[i].to_csv(save_location + '\\' +  save_name + '-' + parameters[i] + '_' + str(i) + '.csv')
-                
+                results[i].to_csv(os.path.join(save_location,save_name + '-' + parameters[i] + '_' + str(i) + '.csv'))
             else:
                 results[i].to_csv(save_name + '-' + parameters[i] + '_' + str(i) + '.csv')
             
@@ -361,6 +363,93 @@ def run_mysql(query, host, port, database, username, password):
     mydb.close()
     return data                       
                 
+def get_table(table_name, save_location = None, save_csv = False, save_name = 'default', database = "PVStations", server = "net1552.net.ucf.edu"):
+
+    '''
+    This function provides a way to receive tables that reside in PI System Explorer.
+    A means of connecting to the server is built into this function.
+    
+    Parameters
+    -----------
+    table_name : string
+        Name of desired table 
+        
+    save_location : string
+        Address where you want the table csv to be saved
+        
+    database : string, default "PVStations"
+        Database where the table resides
+    
+    server : string, default "net1552.net.ucf.edu"
+        Full server name
+    
+    
+    Returns
+    -----------
+    table : DataFrame
+    '''
+
+    # Initialize PISystems
+    piSystems = PISystems()
+    # Choose a server from PISystems
+    piSystem = piSystems[server]
+    # Get all databases
+    databases = piSystem.Databases
+    # Parse list of database
+    data = databases.GetEnumerator() #listdatabases . Methods()
+
+    # Choose database
+    for i in data:
+        if i.Name == database:
+            break
+        else:
+            continue
+    
+    # Get tables in database
+    aftables = i.Tables
+    # Parse list of tables
+    tables = aftables.GetEnumerator()
+
+    # Choose table
+    for j in tables:
+        if j.Name == table_name:
+            break
+        else:
+            continue
+
+    # Initialize lists
+    lst = []
+    rowlst = []
+    maxi = 0
+    
+    # Get number of columns
+    for col in j.Table.Columns:
+        maxi+=1
+
+    # Create list of lists that has data
+    for row in j.Table.Rows:
+        i = 0
+        rowlst = []
+        for col in j.Table.Columns:
+            i += 1
+            point = row[col]
+            rowlst.append(point)
+            if i == maxi:
+                lst.append(rowlst)
+            
+    # Convert list of lists to dataframe
+    table_final = pd.DataFrame.from_records(lst)
+    
+    # save csv with save_name and parameter values
+    if save_csv is True:
+        if save_location is not None:
+            table_final.to_csv(save_location + '\\' +  save_name + '.csv')
+            
+        else:
+            table_final.to_csv(save_name + '.csv')
+
+                
+    return table_final
 
 if __name__ == "__main__":   
 
@@ -371,8 +460,10 @@ if __name__ == "__main__":
                                  element = 'any',
                                  save_csv = True,
                                  save_name = 'test',
-                                 save_location = 'Desktop',
+                                 save_location = 'C:\\Users\\Michael Hopwood\\Desktop\\',
                                  parse = False,
                                  combine_iv_data = True)
         
+    # Example of how to use get_table function
+    table = get_table("ABB Details", save_location = None, save_csv = True, save_name = 'test_function')
         
