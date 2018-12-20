@@ -3,9 +3,9 @@ Python code targeting and using PI data
 
 `Pithon_Servers.py` - contains functions that focus on interactions with the PI System by connecting to the data archive directly
 
-`Pithon_Systems.py` - **decomissioned** contains functions for getting information from the PI System by connecting to the AF Server
+`Pithon_Systems.py` - **decomissioned** - contains functions for getting information from the PI System by connecting to the AF Server
 
-`interfacePithon.py` - **decomissioned** active code running on the Interface machine which grabs data from mySQL server, parses the data, adds a datetime timestamp, and stores into the PI System
+`interfacePithon.py` - **decomissioned** - active code running on the Interface machine which grabs data from mySQL server, parses the data, adds a datetime timestamp, and stores into the PI System
 
 Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documentation/PI-AF-SDK/html/eb961f37-282a-43d2-8f8c-f19ce07d9fa8.htm)__
 
