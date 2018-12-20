@@ -3,7 +3,7 @@ Python code targeting and using PI data
 
 `Pithon_Servers.py` - contains functions that focus on interactions with the PI System by connecting to the data archive directly
 
-`Pithon_Systems.py` - contains functions for getting information from the PI System by connecting to the AF Server
+`Pithon_Systems.py` - *decomissioned* contains functions for getting information from the PI System by connecting to the AF Server
 
 `interfacePithon.py` - active code running on the Interface machine which grabs data from mySQL server, parses the data, adds a datetime timestamp, and stores into the PI System
 
@@ -22,6 +22,7 @@ Osisoft Packages: __[system hierarchy](https://techsupport.osisoft.com/Documenta
 | save_IV  | Save all dataframes in multiple csv files | | 
 | get_IV_csv  | Combines `get_IV` and `save_IV` into one function| | 
 | Store_Vals  | Store values from dataframe into PI System| | 
+| get_table   | Returns dataframe of table saved in PI System. |
 
 
 ### Pithon_Systems
